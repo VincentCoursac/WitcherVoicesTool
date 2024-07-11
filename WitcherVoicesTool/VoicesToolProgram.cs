@@ -1,4 +1,5 @@
 ﻿using NLog;
+using WitcherVoicesTool.Application;
 
 static class VoicesToolProgram
 {
@@ -7,5 +8,6 @@ static class VoicesToolProgram
     static void Main()
     {
         Logger.Info("Tool started!");
+        new ApplicationWindow().Start();
     }
 }
