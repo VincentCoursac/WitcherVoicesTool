@@ -5,7 +5,7 @@ using Veldrid.Sdl2;
 using Veldrid.StartupUtilities;
 using System.Diagnostics;
 using System.Numerics;
-using ImGuiNET;
+using WitcherVoicesTool.Application.Panels;
 
 namespace WitcherVoicesTool.Application;
 
@@ -54,9 +54,7 @@ public class ApplicationWindow
       
             Controller?.Update(CurrentDeltaTime, Snapshot);
 
-            ImGui.Begin("Test");
-            ImGui.Text("Hello world!");
-            ImGui.End();
+            ContentPanelManager.GetInstance()?.Draw(CurrentDeltaTime);
             
             CommandList?.Begin();
             CommandList?.SetFramebuffer(GraphicsDevice?.MainSwapchain.Framebuffer);
