@@ -1,16 +1,15 @@
 ﻿using System.Numerics;
 using ImGuiNET;
+using WitcherVoicesTool.Utils;
 
 namespace WitcherVoicesTool.Application.Panels;
 
-public sealed class ContentPanelManager
+public sealed class ContentPanelManager : Singleton<ContentPanelManager>
 {
-    private ContentPanelManager() { }
-
     private List<ContentPanel> Panels = new List<ContentPanel>();
 
     private bool bShowDemoWindow = false; //TODO: Move this
-    private bool bShowMenuBar = true;
+    private bool bShowMenuBar = false;
 
     public void AddContentPanel(ContentPanel Panel)
     {
@@ -65,7 +64,20 @@ public sealed class ContentPanelManager
         {
             ImGui.PushID(i);
             ContentPanel Panel = Panels[i];
-            Panel.Draw(i, DeltaTime);
+
+            if (Panel.ShouldInitialize())
+            {
+                Panel.ReceiveInit();
+            }
+            
+            Panel.Draw(i, DeltaTime, bShowMenuBar);
+
+            if (Panel.ShouldShutdown())
+            {
+                Panel.ReceiveShutdown();
+                Panels.RemoveAt(i);
+            }
+            
             ImGui.PopID();
         }
     }
@@ -86,12 +98,5 @@ public sealed class ContentPanelManager
             }
             ImGui.EndMenuBar();
         }
-    }
-    
-    private static ContentPanelManager? Instance;
-    
-    public static ContentPanelManager? GetInstance()
-    {
-        return Instance ??= new ContentPanelManager();
     }
 }

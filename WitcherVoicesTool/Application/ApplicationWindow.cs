@@ -5,6 +5,7 @@ using Veldrid.Sdl2;
 using Veldrid.StartupUtilities;
 using System.Diagnostics;
 using System.Numerics;
+using ImGuiNET;
 using WitcherVoicesTool.Application.Panels;
 
 namespace WitcherVoicesTool.Application;
@@ -45,7 +46,12 @@ public class ApplicationWindow
     {
         var FrameWatch = Stopwatch.StartNew();
         float CurrentDeltaTime = 0f;
+        
 
+        var Style = ImGui.GetStyle();
+        Style.Colors[(int)ImGuiCol.FrameBg] = new Vector4(0.20f, 0.20f, 0.20f, 0.54f);
+
+        
         while (CurrentWindow is { Exists: true })
         {
             CurrentDeltaTime = FrameWatch.ElapsedTicks / (float)Stopwatch.Frequency;
@@ -54,6 +60,7 @@ public class ApplicationWindow
       
             Controller?.Update(CurrentDeltaTime, Snapshot);
 
+      
             ContentPanelManager.GetInstance()?.Draw(CurrentDeltaTime);
             
             CommandList?.Begin();

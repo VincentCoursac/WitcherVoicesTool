@@ -8,6 +8,7 @@ public class DemoPanel : ContentPanel
     {
         PanelName = Name;
     }
+
     protected override void DrawContent(float DeltaTime)
     {
         ImGui.Text("Demo text");
