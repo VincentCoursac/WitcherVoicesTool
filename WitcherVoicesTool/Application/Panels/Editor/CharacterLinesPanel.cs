@@ -8,6 +8,7 @@ namespace WitcherVoicesTool.Application.Panels;
 public class CharacterLinesPanel : ContentPanel
 {
     private readonly Character Character;
+    private int MaxLength = 0;
 
     public CharacterLinesPanel(Character InCharacter)
     {
@@ -25,6 +26,8 @@ public class CharacterLinesPanel : ContentPanel
 
             int CurrentlyPlayedVoiceId = VoiceAudioService.GetInstance().GetCurrentlyPlayedVoiceLineId();
 
+            ImGui.InputInt("Max Length", ref MaxLength);
+
             if (ImGui.BeginTable("Lines", 4, TableFlags, outer_size))
             {
                 ImGui.TableSetupScrollFreeze(0, 1);
@@ -39,6 +42,11 @@ public class CharacterLinesPanel : ContentPanel
                 for (int ResultIndex = 0; ResultIndex < Character.LineIds.Count; ++ResultIndex)
                 {
                     VoiceLine Line = VoiceLineService.GetInstance().GetLineById(Character.LineIds[ResultIndex]);
+
+                    if (MaxLength != 0 && Line.TextLine.Length > MaxLength)
+                    {
+                        continue;
+                    }
 
                     ImGui.PushID(Line.Id);
 

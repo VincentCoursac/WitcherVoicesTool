@@ -1,4 +1,5 @@
-﻿using NAudio.Vorbis;
+﻿using System.Diagnostics;
+using NAudio.Vorbis;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using WitcherVoicesTool.Application.Settings;
@@ -37,6 +38,21 @@ public class VoiceAudioService : Singleton<VoiceAudioService>
         {
             CurrentlyPlayedVoiceLine = null;
         };
+    }
+
+    public void LocateVoiceLineAudio(VoiceLine Line)
+    {
+        string filePath = GetVoiceLineAudioPath(Line);
+        if (!File.Exists(filePath))
+        {
+            return;
+        }
+
+        // combine the arguments together
+        // it doesn't matter if there is a space after ','
+        string argument = "/select, \"" + filePath +"\"";
+
+        System.Diagnostics.Process.Start("explorer.exe", argument);
     }
 
     public int GetCurrentlyPlayedVoiceLineId()

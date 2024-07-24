@@ -3,18 +3,25 @@ using ImGuiNET;
 using NAudio.Vorbis;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
+using Newtonsoft.Json;
 using WitcherVoicesTool.Application.Services;
 using WitcherVoicesTool.Models;
+using WitcherVoicesTool.Utils;
 
 namespace WitcherVoicesTool.Application.Panels;
 
-class LineAudioEntry
+public class LineAudioEntry
 {
-    public int UniqueId;
+    public string Id;
     public VoiceLine Line;
     
+    [JsonIgnore]
     private VorbisWaveReader? Reader = null;
+    
+    [JsonIgnore]
     private WaveOut? WaveOut;
+    
+    [JsonIgnore]
     public readonly List<float> Samples = new List<float>();
 
     public float StartTime;
@@ -29,34 +36,21 @@ class LineAudioEntry
 
     public Vector4 Color = new Vector4(1, 1, 1, 1);
 
-    public LineAudioEntry(int Id, VoiceLine InLine)
+    public LineAudioEntry()
     {
-        UniqueId = Id;
+        Id = "";
+        Line = new VoiceLine();
+    }
+
+    public LineAudioEntry(VoiceLine InLine)
+    {
+        Id = Guid.NewGuid().ToString();
         Line = InLine;
         Name = $"{Line.LineId} - {Line.Character}";
 
-        ImGui.ColorConvertHSVtoRGB(UniqueId / 16f, 0.6f, 0.6f, out Color.X, out Color.Y, out Color.Z);
-        
-        Reader = new VorbisWaveReader(VoiceAudioService.GetVoiceLineAudioPath(Line));
-        var Buffer = new float[Reader.WaveFormat.SampleRate];
-        
-        int BytesRead;
+        ImGui.ColorConvertHSVtoRGB(MathUtils.RandomFloatInRange(0,16) / 16f, 0.6f, 0.6f, out Color.X, out Color.Y, out Color.Z);
 
-        while ((BytesRead = Reader.Read(Buffer, 0, Buffer.Length)) > 0)
-        {
-            for (int i = 0; i < BytesRead; i++)
-            {
-                Samples.Add(Buffer[i] * 100);
-            }
-        }
-
-        StartTime = 0f;
-        EndTime = (float) Reader.TotalTime.TotalSeconds;
-
-        TotalDuration = (float)Reader.TotalTime.TotalSeconds;
-
-        /*WaveOut = new WaveOut();
-        WaveOut?.Init(Reader);*/
+        SetupSamplesAndDurations(true);
     }
 
     public void Play()
@@ -78,25 +72,53 @@ class LineAudioEntry
         };
         
    
-        var FadeInSampleProvider = new FadeInOutSampleProvider(TrimmedSampleProvider);
+        /*var FadeProvider = new DelayFadeOutSampleProvider(TrimmedSampleProvider);
 
         if (FadeInDuration > 0)
         {
-            FadeInSampleProvider.BeginFadeIn(FadeInDuration * 1000);
+            FadeProvider.SetFadeIn(FadeInDuration * 1000);
         }
-
-        var FadeOutSampleProvider = new DelayFadeOutSampleProvider(FadeInSampleProvider);
         
         if (FadeOutDuration > 0)
         {
-            FadeOutSampleProvider.BeginFadeOut((EndTime - StartTime - FadeOutDuration) * 1000, FadeOutDuration * 1000);
-        }
+            //FadeProvider.BeginFadeOut((EndTime - StartTime - FadeOutDuration) * 1000, FadeOutDuration * 1000);
+            FadeProvider.SetFadeOut((EndTime - StartTime - FadeOutDuration) * 1000, FadeOutDuration * 1000);
+        }*/
 
-        return FadeOutSampleProvider;
+        return TrimmedSampleProvider;
     }
 
     public string FormattedName()
     {
-        return $"[{UniqueId}] {Name}";
+        return $"[{Line.LineId}] {Name}";
+    }
+
+    public void OnPostLoad()
+    {
+        SetupSamplesAndDurations(false);
+    }
+
+    void SetupSamplesAndDurations(bool bFirstTime)
+    {
+        Reader = new VorbisWaveReader(VoiceAudioService.GetVoiceLineAudioPath(Line));
+        var Buffer = new float[Reader.WaveFormat.SampleRate];
+        
+        int BytesRead;
+
+        while ((BytesRead = Reader.Read(Buffer, 0, Buffer.Length)) > 0)
+        {
+            for (int i = 0; i < BytesRead; i++)
+            {
+                Samples.Add(Buffer[i] * 100);
+            }
+        }
+
+        if (bFirstTime)
+        {
+            StartTime = 0f;
+            EndTime = (float) Reader.TotalTime.TotalSeconds;
+        }
+        
+        TotalDuration = (float)Reader.TotalTime.TotalSeconds;
     }
 }

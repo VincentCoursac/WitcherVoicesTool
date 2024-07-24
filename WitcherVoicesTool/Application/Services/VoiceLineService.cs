@@ -33,6 +33,16 @@ public class VoiceLineService : Singleton<VoiceLineService>
         return Characters.Values.ToList();
     }
 
+    public Character? FindCharacterFromName(string Name)
+    {
+        if (Characters.TryGetValue(Name, out var Character))
+        {
+            return Character;
+        }
+        
+        return null;
+    }
+
     public VoiceLine GetLineById(int LineId)
     {
         if (LineId > 0 && VoiceLines.Count > LineId)
@@ -59,6 +69,11 @@ public class VoiceLineService : Singleton<VoiceLineService>
             
             string CleanedInput = Regex.Replace(InputText, @"[^a-zA-Z0-9\s]", "");
             string[] Words = CleanedInput.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (Words.Length == 1 && ImportantWords.Count == 0)
+            {
+                ImportantWords.Add(Words[0]);
+            }
             
             float ImportantWordsRatio = (float) ImportantWords.Count / Words.Length;
             float ImportantScoreAdding = 100 * ImportantWordsRatio;

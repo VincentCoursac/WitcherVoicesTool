@@ -44,7 +44,7 @@ public class LoadApplicationPanel : ContentPanel
             if (Sequencer.IsInProgress())
             {
                 ImGui.Text("Loading...");
-                CurrentProgress = Smoothing.InterpTo(CurrentProgress, Sequencer.GetProgressRatio(), DeltaTime, 1f);
+                CurrentProgress = MathUtils.InterpTo(CurrentProgress, Sequencer.GetProgressRatio(), DeltaTime, 1f);
                 ImGui.ProgressBar(CurrentProgress, new Vector2(0.0f, 0.0f));
             }
             else if (Sequencer.WasCanceled())

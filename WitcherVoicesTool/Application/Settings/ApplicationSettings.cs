@@ -10,6 +10,7 @@ public class ApplicationSettings
     private static readonly string SettingsFilename = "Settings.json";
 
     public readonly VoiceLibrarySettings VoiceLibrarySettings = new VoiceLibrarySettings();
+    public readonly ProjectsSettings ProjectsSettings = new ProjectsSettings();
 
     private static ApplicationSettings? Instance;
 

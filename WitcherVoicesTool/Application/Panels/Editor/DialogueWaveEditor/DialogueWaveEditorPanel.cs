@@ -1,75 +1,30 @@
 ﻿using System.Numerics;
 using ImGuiNET;
-using NAudio.MediaFoundation;
-using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
+using WitcherVoicesTool.Application.Services;
 using WitcherVoicesTool.Models;
+using WitcherVoicesTool.Utils;
 
 namespace WitcherVoicesTool.Application.Panels;
 
-enum AudioSequenceEntryType
-{
-    Audio,
-    Silence
-}
 
-class AudioSequenceEntry
-{
-    public AudioSequenceEntryType Type;
-    public LineAudioEntry? Audio;
-    public float Duration = 0f;
-
-    public static AudioSequenceEntry FromAudio(LineAudioEntry InAudio)
-    {
-        AudioSequenceEntry Entry = new AudioSequenceEntry();
-        Entry.Type = AudioSequenceEntryType.Audio;
-        Entry.Audio = InAudio;
-        Entry.Duration = InAudio.TotalDuration;
-        return Entry;
-    }
-    
-    public static AudioSequenceEntry FromSilence(float SilenceDuration)
-    {
-        AudioSequenceEntry Entry = new AudioSequenceEntry();
-        Entry.Type = AudioSequenceEntryType.Silence;
-        Entry.Duration = SilenceDuration;
-        return Entry;
-    }
-
-    public string GetName()
-    {
-        switch (Type)
-        {
-            case AudioSequenceEntryType.Audio:
-                return Audio?.Name ?? string.Empty;
-            case AudioSequenceEntryType.Silence:
-                return "[Silence]";
-        }
-
-        return "";
-    }
-}
 public class DialogueWaveEditorPanel : ContentPanel
 {
     public static readonly List<DialogueWaveEditorPanel> OpenedWaveEditors = new List<DialogueWaveEditorPanel>();
-
-    private int CurrentUniqueId = 0;
-
-    private readonly List<AudioSequenceEntry> Sequence = new List<AudioSequenceEntry>();
     
-    private readonly List<LineAudioEntry> AudioEntries = new List<LineAudioEntry>();
-
     private LineAudioEntry? CurrentlyEditingEntryName = null;
     private bool bShouldOpenRenamePopup = false;
     private string CurrentEditedName = "";
 
     private LineAudioEntry? SelectedAudio = null;
     
-    private WaveOut? WaveOut;
+    private Scene ParentScene;
+    private SceneLine TargetLine;
     
-    public DialogueWaveEditorPanel()
+    public DialogueWaveEditorPanel(Scene InScene, SceneLine InTargetLine)
     {
-        PanelName = $"Dialogue Editor #{OpenedWaveEditors.Count + 1}";
+        ParentScene = InScene;
+        TargetLine = InTargetLine;
+        PanelName = $"{ParentScene.Header.Name} - {TargetLine.Character}";
     }
 
     protected override void Initialize()
@@ -77,24 +32,37 @@ public class DialogueWaveEditorPanel : ContentPanel
         OpenedWaveEditors.Add(this);
     }
 
+    protected override void Shutdown()
+    {
+        OpenedWaveEditors.Remove(this);
+    }
+
     protected override void DrawContent(float DeltaTime)
     {
         if (ImGui.BeginChild("Final Wave",  new Vector2(ImGui.GetContentRegionAvail().X, 170), ImGuiChildFlags.Border, ImGuiWindowFlags.None))
         {
-            ImGui.BeginChild("left pane", new Vector2(350, 0), ImGuiChildFlags.AlwaysUseWindowPadding);
+            ImGui.BeginChild("left pane", new Vector2(ImGui.GetContentRegionAvail().X * 0.4f, 0), ImGuiChildFlags.AlwaysUseWindowPadding);
 
-            if (AudioEntries.Count > 0)
+            if (TargetLine.AudioEntries.Count > 0)
             {
+                if (SelectedAudio != null)
+                {
+                    ImGui.PushStyleColor(ImGuiCol.Text, SelectedAudio.Color);
+                }
                 if (ImGui.BeginCombo("Pick Audio", SelectedAudio?.FormattedName()))
                 {
-                    foreach (var Entry in AudioEntries)
+                    foreach (var Entry in TargetLine.AudioEntries)
                     {
                         bool bIsSelected = Entry == SelectedAudio;
+                        
+                        ImGui.PushStyleColor(ImGuiCol.Text, Entry.Color);
 
                         if (ImGui.Selectable(Entry.FormattedName(), bIsSelected))
                         {
                             SelectedAudio = Entry;
                         }
+
+                        ImGui.PopStyleColor();
 
                         if (bIsSelected)
                         {
@@ -103,22 +71,29 @@ public class DialogueWaveEditorPanel : ContentPanel
                     }
                     ImGui.EndCombo();
                 }
+                
+                if (SelectedAudio != null)
+                {
+                    ImGui.PopStyleColor();
+                }
             }
             else
             {
                 ImGui.TextColored(new Vector4(1,0,0,1), "Add Audio First");
             }
 
-            ImGui.BeginDisabled(AudioEntries.Count == 0);
+            ImGui.BeginDisabled(TargetLine.AudioEntries.Count == 0);
             if (ImGui.Button("Add audio") && SelectedAudio != null)
             {
-                Sequence.Add(AudioSequenceEntry.FromAudio(SelectedAudio));
+                TargetLine.Sequence.Add(AudioSequenceEntry.FromAudio(SelectedAudio));
+                ParentScene.Save();
             }
             ImGui.EndDisabled();
             ImGui.SameLine();
             if (ImGui.Button("Add silence"))
             {
-                Sequence.Add(AudioSequenceEntry.FromSilence(1));
+                TargetLine.Sequence.Add(AudioSequenceEntry.FromSilence(1));
+                ParentScene.Save();
             }
           
             ImGui.Dummy(new Vector2(0,1));
@@ -138,10 +113,11 @@ public class DialogueWaveEditorPanel : ContentPanel
                 ImGui.TableHeadersRow();
 
                 List<int> IndexesToRemove = new List<int>();
+                List<(int, int)> IndexesToSwap = new List<(int, int)>();
                 
-                for (int i = 0; i < Sequence.Count; ++i)
+                for (int i = 0; i < TargetLine.Sequence.Count; ++i)
                 {
-                    AudioSequenceEntry Entry = Sequence[i];
+                    AudioSequenceEntry Entry = TargetLine.Sequence[i];
                     
                     ImGui.PushID(i);
                     
@@ -174,71 +150,66 @@ public class DialogueWaveEditorPanel : ContentPanel
                         IndexesToRemove.Add(i);
                     }
                     
+                    ImGui.SameLine();
+                    
+                    ImGui.BeginDisabled(i == 0);
+                    if (ImGui.Button("/\\"))
+                    {
+                        IndexesToSwap.Add((i, i - 1));
+                    }
+                    ImGui.EndDisabled();
+                    
+                    ImGui.SameLine();
+                    
+                    ImGui.BeginDisabled(i == TargetLine.Sequence.Count - 1);
+                    if (ImGui.Button("\\/"))
+                    {
+                        IndexesToSwap.Add((i, i + 1));
+                    }
+                    ImGui.EndDisabled();
+                    
                     ImGui.PopID();
                 }
              
                 ImGui.EndTable();
 
-                for (int i = IndexesToRemove.Count - 1; i >= 0; --i)
+                if (IndexesToRemove.Count > 0)
                 {
-                    Sequence.RemoveAt(i);
-                }
-            }
+                    for (int i = IndexesToRemove.Count - 1; i >= 0; --i)
+                    {
+                        TargetLine.Sequence.RemoveAt(IndexesToRemove[i]);
+                    }
 
+                    ParentScene.Save();
+                }
+                
+                if (IndexesToSwap.Count > 0)
+                {
+                    foreach (var Swap in IndexesToSwap)
+                    {
+                        (TargetLine.Sequence[Swap.Item1], TargetLine.Sequence[Swap.Item2]) = (TargetLine.Sequence[Swap.Item2], TargetLine.Sequence[Swap.Item1]);
+                    }
+
+                    ParentScene.Save();
+                }             
+            }
 
             ImGui.EndChild();
             ImGui.SameLine();
             ImGui.BeginChild("right pane", new Vector2(0, 0), ImGuiChildFlags.Border);
 
            
+            ImGui.SeparatorText($"Character : {TargetLine.Character}");
+            ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X);
+            ImGui.InputTextWithHint("##LineText", "Hello my dear Geralt !", ref  TargetLine.LineText, 256);
+            ImGui.PopItemWidth();
+            ImGui.Separator();
+            
+            ImGui.Dummy(new Vector2(0,10));
             
             if (ImGui.Button("Play"))
             {
-                WaveFormat? Format = null;
-                List<ISampleProvider> Providers = new List<ISampleProvider>();
-                
-                foreach (var Entry in Sequence)
-                {
-                    if (Entry.Type == AudioSequenceEntryType.Audio)
-                    {
-                        if (Entry.Audio != null)
-                        {
-                            Format = Entry.Audio.BuildSampleProvider()?.WaveFormat;
-                            break;
-                        }
-                    }
-                }
-
-                if (Format == null)
-                {
-                    return;
-                }
-                
-                foreach (var Entry in Sequence)
-                {
-                    if (Entry.Type == AudioSequenceEntryType.Audio)
-                    {
-                        if (Entry.Audio != null)
-                        {
-                            ISampleProvider? BuiltProvider = Entry.Audio.BuildSampleProvider();
-                            if (BuiltProvider != null)
-                            {
-                                Providers.Add(BuiltProvider);
-                            }
-                        }
-                    }
-                    else if (Entry.Type == AudioSequenceEntryType.Silence)
-                    {
-                        Providers.Add(new SilenceProvider (Format).ToSampleProvider().Take(TimeSpan.FromSeconds(Entry.Duration)));
-                    }
-                   
-                }
-                
-                var playlist = new ConcatenatingSampleProvider(Providers.ToArray());
-               
-                WaveOut = new WaveOut();
-                WaveOut.Init(playlist);
-                WaveOut.Play();
+                TargetLine.Play();
             }
             
             ImGui.EndChild();
@@ -269,8 +240,13 @@ public class DialogueWaveEditorPanel : ContentPanel
 
             if (ImGui.Button("Rename"))
             {
-                if (CurrentlyEditingEntryName != null) CurrentlyEditingEntryName.Name = CurrentEditedName;
-                ImGui.CloseCurrentPopup();
+                if (CurrentlyEditingEntryName != null)
+                {
+                    CurrentlyEditingEntryName.Name = CurrentEditedName;
+                    ImGui.CloseCurrentPopup();
+                    ParentScene.Save();
+                }
+                    
             }
             ImGui.SameLine();
             if (ImGui.Button("Cancel"))
@@ -288,9 +264,9 @@ public class DialogueWaveEditorPanel : ContentPanel
 
         int EntryIndexToRemove = -1;
         
-        for (int EntryIndex = 0; EntryIndex < AudioEntries.Count; ++EntryIndex)
+        for (int EntryIndex = 0; EntryIndex < TargetLine.AudioEntries.Count; ++EntryIndex)
         {
-            LineAudioEntry Entry = AudioEntries[EntryIndex];
+            LineAudioEntry Entry = TargetLine.AudioEntries[EntryIndex];
             
             /*ImVec4* colors = ImGui::GetStyle().Colors;
             colors[ImGuiCol_Border]                 = ImVec4(0.27f, 0.59f, 0.39f, 0.50f);
@@ -299,7 +275,7 @@ public class DialogueWaveEditorPanel : ContentPanel
             ImGui.PushStyleColor(ImGuiCol.MenuBarBg, Entry.Color);
             ImGui.PushStyleColor(ImGuiCol.Border, Entry.Color);
             
-            if (ImGui.BeginChild($"{Entry.UniqueId}",  new Vector2(ImGui.GetContentRegionAvail().X, 170), ImGuiChildFlags.Border, WindowsFlags))
+            if (ImGui.BeginChild($"{Entry.Id}",  new Vector2(ImGui.GetContentRegionAvail().X, 170), ImGuiChildFlags.Border, WindowsFlags))
             {
                 ImGuiStylePtr style = ImGui.GetStyle();
                 float PreviousAlpha = style.DisabledAlpha;
@@ -307,7 +283,7 @@ public class DialogueWaveEditorPanel : ContentPanel
                 ImGui.BeginDisabled();
                 if (ImGui.BeginMenuBar())
                 {
-                    if (ImGui.BeginMenu($"[{Entry.UniqueId}] {Entry.Name}"))
+                    if (ImGui.BeginMenu(Entry.FormattedName()))
                     {
                         ImGui.EndMenu();
                     }
@@ -335,8 +311,8 @@ public class DialogueWaveEditorPanel : ContentPanel
                 ImGui.SameLine();
                 ImGui.InputFloat("End Time", ref Entry.EndTime, 0.01f, 1.0f, "%.3f");
 
-                Entry.StartTime = Math.Clamp(Entry.StartTime, 0, Entry.EndTime - 0.01f);
-                Entry.EndTime = Math.Clamp(Entry.EndTime, Entry.StartTime + 0.01f, Entry.TotalDuration);
+                Entry.StartTime = MathUtils.Clamp(Entry.StartTime, 0, Entry.EndTime - 0.01f);
+                Entry.EndTime = MathUtils.Clamp(Entry.EndTime, Entry.StartTime + 0.01f, Entry.TotalDuration);
                 
                 if (ImGui.SmallButton("R##3"))
                 {
@@ -386,7 +362,8 @@ public class DialogueWaveEditorPanel : ContentPanel
 
         if (EntryIndexToRemove != -1)
         {
-            AudioEntries.RemoveAt(EntryIndexToRemove);
+            TargetLine.AudioEntries.RemoveAt(EntryIndexToRemove);
+            ParentScene.Save();
         }
     }
 
@@ -435,9 +412,11 @@ public class DialogueWaveEditorPanel : ContentPanel
 
     public void AddVoiceLine(VoiceLine Line)
     {
-        LineAudioEntry NewEntry = new LineAudioEntry(CurrentUniqueId++, Line);
+        LineAudioEntry NewEntry = new LineAudioEntry(Line);
         
-        AudioEntries.Add(NewEntry);
+        TargetLine.AudioEntries.Add(NewEntry);
         SelectedAudio ??= NewEntry;
+
+        ParentScene.Save();
     }
 }

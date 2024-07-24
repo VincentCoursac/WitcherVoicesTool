@@ -46,7 +46,7 @@ public class BuildVoiceLibraryPanel : ContentPanel
         Close();
         ContentPanelManager.GetInstance()?.AddContentPanel(CharactersPanel.GetInstance());
         ContentPanelManager.GetInstance()?.AddContentPanel(new LinesSearchPanel());
-        ContentPanelManager.GetInstance()?.AddContentPanel(new DialogueWaveEditorPanel());
+        ContentPanelManager.GetInstance()?.AddContentPanel(HomePanel.GetInstance());
     }
     protected override void DrawContent(float DeltaTime)
     {
@@ -72,7 +72,7 @@ public class BuildVoiceLibraryPanel : ContentPanel
             ImGui.Dummy(new Vector2(0,5));
             ImGui.Text("Building Library...");
             
-            CurrentBuildProgress = Smoothing.InterpTo(CurrentBuildProgress, BuildVoicesSequencer.GetProgressRatio(), DeltaTime, 1f);
+            CurrentBuildProgress = MathUtils.InterpTo(CurrentBuildProgress, BuildVoicesSequencer.GetProgressRatio(), DeltaTime, 1f);
             ImGui.ProgressBar(CurrentBuildProgress, new Vector2(0.0f, 0.0f));
         }
     }

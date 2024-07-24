@@ -14,7 +14,9 @@ public class LinesSearchPanel : ContentPanel
     private string FinalInputText = "";
     private List<VoiceLine> CurrentVoiceLines = new List<VoiceLine>();
     private List<string> ImportantWords = new List<string>();
-    private bool bPickingEditor = false;
+
+    private VoiceLine? SelectedLine = null;
+    private PopupInvokator SelectPanelPopup = new PopupInvokator("Choose Editor");
     
     public LinesSearchPanel()
     {
@@ -104,14 +106,37 @@ public class LinesSearchPanel : ContentPanel
                         }
                         else
                         {
-                            bPickingEditor = true;
+                            SelectedLine = Line;
+                            SelectPanelPopup.RequestPopup();
                         }
                     }
-                   
+                    
+                    ImGui.SameLine();
+
+                    if (ImGui.SmallButton("Locate.."))
+                    {
+                        VoiceAudioService.GetInstance().LocateVoiceLineAudio(Line);
+                    }
+                    
                     ImGui.TableSetColumnIndex(2);
                     ImGui.Text($"{Line.Character}");
+                    ImGui.SameLine();
+
+                    if (ImGui.SmallButton("+"))
+                    {
+                        Character? Character = VoiceLineService.GetInstance().FindCharacterFromName(Line.Character);
+                        if (Character != null)
+                        {
+                            ContentPanelManager.GetInstance().AddContentPanel(new CharacterLinesPanel(Character));
+                        }
+                    }
                     ImGui.TableSetColumnIndex(3);
                     HighlightText(Line.TextLine);
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton("C"))
+                    {
+                        Clipboard.SetText(Line.TextLine);
+                    }
                     
                     ImGui.PopID();
                 }
@@ -123,16 +148,9 @@ public class LinesSearchPanel : ContentPanel
 
     protected override void DrawUnframed(float DeltaTime)
     {
-        if (bPickingEditor)
-        {
-            ImGui.OpenPopup("Pick Editor");
-            bPickingEditor = false;
-        }
-        
-        Vector2 center = ImGui.GetMainViewport().GetCenter();
-        ImGui.SetNextWindowPos(center, ImGuiCond.Always, new Vector2(0.5f, 0.5f));
-        
-        if (ImGui.BeginPopupModal("Pick Editor", ImGuiWindowFlags.AlwaysAutoResize /*| ImGuiWindowFlags.NoTitleBar*/))
+        SelectPanelPopup.TryOpenIfNeeded();
+
+        if (Widgets.ModalPopup(SelectPanelPopup.GetPopupName()))
         {
             ImGui.Text("Pick Editor");
 
@@ -144,7 +162,8 @@ public class LinesSearchPanel : ContentPanel
                 
                 if (ImGui.Button("Add"))
                 {
-                    //Panel.AddVoiceLine(null);
+                    if (SelectedLine != null)
+                        Panel.AddVoiceLine(SelectedLine);
                     ImGui.CloseCurrentPopup();
                 }
                 ImGui.PopID();

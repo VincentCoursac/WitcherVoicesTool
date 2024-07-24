@@ -10,9 +10,13 @@ public abstract class ContentPanel
     protected string PanelName = "Panel";
     protected bool bFullscreen = false;
     protected bool bOnlyUnframed = false;
+    protected bool bCanBeClosed = true;
 
     private bool bInitialized = false;
     private bool bWaitingShutdown = false;
+
+    private bool bOpened = true;
+    
 
     public void ReceiveInit()
     {
@@ -27,6 +31,12 @@ public abstract class ContentPanel
     
     public void Draw(int PanelId, float DeltaTime, bool bMenuOpened)
     {
+        if (!bOpened)
+        {
+            bWaitingShutdown = true;
+            return;
+        }
+        
         if (!bOnlyUnframed)
         {
             ImGuiWindowFlags Flags = ImGuiWindowFlags.None;
@@ -51,7 +61,18 @@ public abstract class ContentPanel
                 Flags |= ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoNavFocus;
             }
             
-            if (ImGui.Begin($"{PanelName}##{PanelId}", Flags))
+            bool bFrameDrawn;
+
+            if (bCanBeClosed)
+            {
+                bFrameDrawn = ImGui.Begin($"{PanelName}##{PanelId}", ref bOpened, Flags);
+            }
+            else
+            {
+                bFrameDrawn = ImGui.Begin($"{PanelName}##{PanelId}", Flags);
+            }
+            
+            if (bFrameDrawn)
             {
                 DrawContent(DeltaTime);
             
