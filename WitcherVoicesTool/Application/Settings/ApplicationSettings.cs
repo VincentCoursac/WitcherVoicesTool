@@ -11,6 +11,7 @@ public class ApplicationSettings
 
     public readonly VoiceLibrarySettings VoiceLibrarySettings = new VoiceLibrarySettings();
     public readonly ProjectsSettings ProjectsSettings = new ProjectsSettings();
+    public readonly TemplateSettings TemplateSettings = new TemplateSettings();
 
     private static ApplicationSettings? Instance;
 

@@ -28,7 +28,10 @@ public class ScenePanel : ContentPanel
     {
         if (ImGui.Button("Add Line"))
         {
-            Scene.Lines.Add(new SceneLine());
+            SceneLine Line = new SceneLine();
+            Line.Id = Guid.NewGuid().ToString();
+            
+            Scene.Lines.Add(Line);
         }
         
         ImGui.SameLine();

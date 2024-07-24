@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using ImGuiNET;
 using WitcherVoicesTool.Application.Services;
+using WitcherVoicesTool.Application.Settings;
 using WitcherVoicesTool.Models;
 
 namespace WitcherVoicesTool.Application.Panels;
@@ -18,6 +19,7 @@ public class HomePanel : SingletonPanel<HomePanel>
     protected override void Initialize()
     {
         ProjectService.GetInstance().LoadRecentProjects();
+        ApplicationSettings.Get().TemplateSettings.OnPostLoad();
     }
 
     protected override void DrawContent(float DeltaTime)
@@ -26,6 +28,13 @@ public class HomePanel : SingletonPanel<HomePanel>
         {
             NewProject = new Project();
             CreateProjectPopup.RequestPopup();
+        }
+        
+        ImGui.SameLine();
+
+        if (ImGui.Button("Manage Templates"))
+        {
+            ContentPanelManager.GetInstance().AddContentPanel(new TemplatesPanel());
         }
         
         ImGui.SeparatorText("Recent projects");

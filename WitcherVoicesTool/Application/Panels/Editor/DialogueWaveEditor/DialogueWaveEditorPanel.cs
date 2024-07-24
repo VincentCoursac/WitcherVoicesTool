@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using ImGuiNET;
 using WitcherVoicesTool.Application.Services;
+using WitcherVoicesTool.Application.Settings;
 using WitcherVoicesTool.Models;
 using WitcherVoicesTool.Utils;
 
@@ -16,15 +17,25 @@ public class DialogueWaveEditorPanel : ContentPanel
     private string CurrentEditedName = "";
 
     private LineAudioEntry? SelectedAudio = null;
+
+    private ISavable ParentSavable;
+    private LineBase TargetLine;
+
+    private PopupInvokator PickTemplatePopup = new PopupInvokator("Select Popup");
     
-    private Scene ParentScene;
-    private SceneLine TargetLine;
-    
-    public DialogueWaveEditorPanel(Scene InScene, SceneLine InTargetLine)
+    public DialogueWaveEditorPanel(Scene InScene, LineBase InTargetLine)
     {
-        ParentScene = InScene;
+        //ParentScene = InScene;
+        ParentSavable = InScene;
         TargetLine = InTargetLine;
-        PanelName = $"{ParentScene.Header.Name} - {TargetLine.Character}";
+       // PanelName = $"{ParentScene.Header.Name} - {TargetLine.Character}";
+    }
+    
+    public DialogueWaveEditorPanel(LineBase InTargetLine)
+    {
+        ParentSavable = ApplicationSettings.Get().TemplateSettings;
+        TargetLine = InTargetLine;
+        PanelName = $"Template - {TargetLine.Character}";
     }
 
     protected override void Initialize()
@@ -86,14 +97,19 @@ public class DialogueWaveEditorPanel : ContentPanel
             if (ImGui.Button("Add audio") && SelectedAudio != null)
             {
                 TargetLine.Sequence.Add(AudioSequenceEntry.FromAudio(SelectedAudio));
-                ParentScene.Save();
+                ParentSavable.Save();
             }
             ImGui.EndDisabled();
             ImGui.SameLine();
             if (ImGui.Button("Add silence"))
             {
                 TargetLine.Sequence.Add(AudioSequenceEntry.FromSilence(1));
-                ParentScene.Save();
+                ParentSavable.Save();
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("Add template"))
+            {
+                PickTemplatePopup.RequestPopup();
             }
           
             ImGui.Dummy(new Vector2(0,1));
@@ -138,6 +154,12 @@ public class DialogueWaveEditorPanel : ContentPanel
                             ImGui.InputFloat("", ref Entry.Duration, 0.01f, 1.0f, "%.3f"); 
                             
                             break;
+                        case AudioSequenceEntryType.Template:
+                            
+                            ImGui.SetNextItemWidth(100);
+                            ImGui.Text("WIP");
+                            
+                            break;
                         default:
                             break;
                     }
@@ -180,7 +202,7 @@ public class DialogueWaveEditorPanel : ContentPanel
                         TargetLine.Sequence.RemoveAt(IndexesToRemove[i]);
                     }
 
-                    ParentScene.Save();
+                    ParentSavable.Save();
                 }
                 
                 if (IndexesToSwap.Count > 0)
@@ -190,7 +212,7 @@ public class DialogueWaveEditorPanel : ContentPanel
                         (TargetLine.Sequence[Swap.Item1], TargetLine.Sequence[Swap.Item2]) = (TargetLine.Sequence[Swap.Item2], TargetLine.Sequence[Swap.Item1]);
                     }
 
-                    ParentScene.Save();
+                    ParentSavable.Save();
                 }             
             }
 
@@ -244,11 +266,74 @@ public class DialogueWaveEditorPanel : ContentPanel
                 {
                     CurrentlyEditingEntryName.Name = CurrentEditedName;
                     ImGui.CloseCurrentPopup();
-                    ParentScene.Save();
+                    ParentSavable.Save();
                 }
                     
             }
             ImGui.SameLine();
+            if (ImGui.Button("Cancel"))
+            {
+                ImGui.CloseCurrentPopup();
+            }
+            
+            ImGui.EndPopup();
+        }
+        
+        PickTemplatePopup.TryOpenIfNeeded();
+
+        if (Widgets.ModalPopup(PickTemplatePopup.GetPopupName()))
+        {
+            List<Template> Templates = ApplicationSettings.Get().TemplateSettings.GetTemplates();
+
+            ImGuiTableFlags TableFlags = ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg |
+                                         ImGuiTableFlags.BordersOuter | ImGuiTableFlags.BordersV
+                                         | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.Hideable;
+            ImGui.Dummy(new Vector2(600,0));
+            Vector2 outer_size = new Vector2(0.0f, 250);
+
+            if (ImGui.BeginTable("Audios", 3, TableFlags, outer_size))
+            {
+                ImGui.TableSetupColumn("Character", ImGuiTableColumnFlags.NoResize);
+                ImGui.TableSetupColumn("Text", ImGuiTableColumnFlags.NoResize, 100);
+                ImGui.TableSetupColumn("Actions", ImGuiTableColumnFlags.NoResize);
+                
+                ImGui.TableHeadersRow();
+
+              
+                foreach (var Template in Templates)
+                {
+                    ImGui.PushID(Template.Id);
+                    
+                    ImGui.TableNextRow();
+        
+                    ImGui.TableSetColumnIndex(0);
+                    ImGui.AlignTextToFramePadding();
+                    ImGui.Text(Template.Character);       
+                    ImGui.TableSetColumnIndex(1);
+                    ImGui.AlignTextToFramePadding();
+                    ImGui.Text(Template.LineText);
+                    ImGui.TableSetColumnIndex(2);
+
+                    if (ImGui.Button("Play"))
+                    {
+                        Template.Play();
+                    }
+                    
+                    ImGui.SameLine();
+                    
+                    if (ImGui.Button("Add"))
+                    {
+                        TargetLine.Sequence.Add(AudioSequenceEntry.FromTemplate(Template));
+                        ParentSavable.Save();
+                        ImGui.CloseCurrentPopup();
+                    }
+                    
+                    ImGui.PopID();
+                }
+             
+                ImGui.EndTable();
+            }
+
             if (ImGui.Button("Cancel"))
             {
                 ImGui.CloseCurrentPopup();
@@ -353,8 +438,6 @@ public class DialogueWaveEditorPanel : ContentPanel
                 ImGui.SameLine();
                 
                 DrawCurve(Entry);
-                
-                
             }
             ImGui.EndChild();
             ImGui.PopStyleColor(2);
@@ -363,7 +446,7 @@ public class DialogueWaveEditorPanel : ContentPanel
         if (EntryIndexToRemove != -1)
         {
             TargetLine.AudioEntries.RemoveAt(EntryIndexToRemove);
-            ParentScene.Save();
+            ParentSavable.Save();
         }
     }
 
@@ -417,6 +500,6 @@ public class DialogueWaveEditorPanel : ContentPanel
         TargetLine.AudioEntries.Add(NewEntry);
         SelectedAudio ??= NewEntry;
 
-        ParentScene.Save();
+        ParentSavable.Save();
     }
 }

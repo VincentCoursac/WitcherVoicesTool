@@ -13,16 +13,17 @@ public class SceneHeader
     public string ParentFolderId = "";
 }
 
-public class SceneLine
+public class LineBase
 {
-    public readonly string Id = Guid.NewGuid().ToString();
+    public string Id = "/";
     public string Character = "";
     public string LineText = "";
-
+    
+    [JsonIgnore] public bool bEditingText = false;
+    
     public readonly List<LineAudioEntry> AudioEntries = new List<LineAudioEntry>();
     public readonly List<AudioSequenceEntry> Sequence = new List<AudioSequenceEntry>();
     
-    [JsonIgnore] public bool bEditingText = false;
     [JsonIgnore] private WaveOut? WaveOut;
 
     public ISampleProvider? BuildProvider()
@@ -37,6 +38,15 @@ public class SceneLine
                 if (Entry.Audio != null)
                 {
                     Format = Entry.Audio.BuildSampleProvider()?.WaveFormat;
+                    break;
+                }
+            }
+            
+            if (Entry.Type == AudioSequenceEntryType.Template)
+            {
+                if (Entry.Template != null)
+                {
+                    Format = Entry.Template.BuildProvider()?.WaveFormat;
                     break;
                 }
             }
@@ -64,7 +74,17 @@ public class SceneLine
             {
                 Providers.Add(new SilenceProvider (Format).ToSampleProvider().Take(TimeSpan.FromSeconds(Entry.Duration)));
             }
-                   
+            else if (Entry.Type == AudioSequenceEntryType.Template)
+            {
+                if (Entry.Template != null)
+                {
+                    ISampleProvider? BuiltProvider = Entry.Template.BuildProvider();
+                    if (BuiltProvider != null)
+                    {
+                        Providers.Add(BuiltProvider);
+                    }
+                }
+            }
         }
                 
         return new ConcatenatingSampleProvider(Providers.ToArray());
@@ -95,7 +115,12 @@ public class SceneLine
         }
     }
 }
-public class Scene
+
+public class SceneLine : LineBase
+{
+    
+}
+public class Scene : ISavable
 {
     public SceneHeader Header;
 
