@@ -488,6 +488,12 @@ public class DialogueWaveEditorPanel : ContentPanel
                 Entry.Samples.Count, 0, null, -1, 1, new Vector2(ImGui.GetContentRegionAvail().X, 90));
             
             ImGui.Text(Entry.Line.TextLine);
+            
+            ImGui.SameLine();
+            if (ImGui.SmallButton("C"))
+            {
+                Clipboard.SetText(Entry.Line.TextLine);
+            }
         }
 
         ImGui.EndChild();
