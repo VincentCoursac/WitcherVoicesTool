@@ -52,7 +52,10 @@ public class ScenePanel : ContentPanel
         
         if (ImGui.Button("Export All"))
         {
-           
+            foreach (SceneLine Line in Scene.Lines)
+            {
+                Scene.ExportLine(Line);
+            }
         }
         
         
