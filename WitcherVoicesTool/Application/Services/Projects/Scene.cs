@@ -207,6 +207,12 @@ public class Scene : ISavable
 
     public void ExportLine(SceneLine Line)
     {
+        ExportLineInternal(Line);
+        ExportLineInternal(Line, "16k", 16000);
+    }
+
+    private void ExportLineInternal(SceneLine Line, string Subfolder = "", int OutRate = -1)
+    {
         int LineIndex = Lines.FindIndex(l => l.Id == Line.Id);
         if (!Macros.ENSURE(LineIndex != -1))
         {
@@ -215,12 +221,35 @@ public class Scene : ISavable
 
         string Filename = RelativeSceneFolder.Replace("/", "_");
         Filename += $"{FileUtils.GetSafeFilename(Header.Name)}_{FileUtils.GetSafeFilename(Line.Character)}_{(LineIndex + 1).ToString().PadLeft(2, '0')}.wav";
-        Directory.CreateDirectory(GetExportedAudiosFolder());
-        string AudioPath = Path.Combine(GetExportedAudiosFolder(), Filename.ToLower());
+        string BaseFolder = GetExportedAudiosFolder();
+        if (Subfolder.Length > 0)
+        {
+            BaseFolder = Path.Combine(BaseFolder, Subfolder);
+        }
+        Directory.CreateDirectory(BaseFolder);
+        string AudioPath = Path.Combine(BaseFolder, Filename.ToLower());
         ISampleProvider? Provider = Line.BuildProvider();
-        WaveFileWriter.CreateWaveFile16(AudioPath, Provider);
+        
+        if (Provider == null)
+        {
+            return;
+        }
+
+        if (OutRate != -1)
+        {
+            var OutFormat = new WaveFormat(OutRate, Provider.WaveFormat.Channels);
+            var Resampler = new WdlResamplingSampleProvider(Provider, OutRate);
+            
+            WaveFileWriter.CreateWaveFile16(AudioPath, Resampler);
+        }
+        else
+        {
+            WaveFileWriter.CreateWaveFile16(AudioPath, Provider);
+        }
+        
+        
     }
-    
+
     string GetSceneFilePath()
     {
         return Path.Combine(AbsoluteSceneFolder, FileUtils.GetSafeFilename(Header.Name) + ".vtscene");
