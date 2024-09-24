@@ -18,6 +18,8 @@ public class LinesSearchPanel : ContentPanel
     private VoiceLine? SelectedLine = null;
     private PopupInvokator SelectPanelPopup = new PopupInvokator("Choose Editor");
     
+    float ImportantWordScoreMultiplier = 1;
+    
     public LinesSearchPanel()
     {
         PanelName = "Search Lines";
@@ -42,6 +44,12 @@ public class LinesSearchPanel : ContentPanel
         }
         
         ImGui.EndDisabled();
+
+
+        if (ImGui.SliderFloat("Important Words Score Multiplier", ref ImportantWordScoreMultiplier, 1, 30))
+        {
+            Search();
+        }
 
         if (bSearchInProgress)
         {
@@ -228,13 +236,18 @@ public class LinesSearchPanel : ContentPanel
 
     async Task Search()
     {
+        if (bSearchInProgress)
+        {
+            return;
+        }
+        
         bSearchInProgress = true;
         SearchProgress = 0f;
 
         FinalInputText = CurrentSearchText;
         ExtractImportantWords(ref FinalInputText);
         
-        CurrentVoiceLines = await VoiceLineService.GetInstance().SearchLines(FinalInputText, ImportantWords, Progress =>
+        CurrentVoiceLines = await VoiceLineService.GetInstance().SearchLines(FinalInputText, ImportantWords, ImportantWordScoreMultiplier, Progress =>
         {
             SearchProgress = Progress;
         });

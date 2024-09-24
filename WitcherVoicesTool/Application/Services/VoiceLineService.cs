@@ -53,7 +53,7 @@ public class VoiceLineService : Singleton<VoiceLineService>
         return new VoiceLine();
     }
 
-    public async Task<List<VoiceLine>> SearchLines(string InputText, List<string> ImportantWords, Action<float> ProgressCallback)
+    public async Task<List<VoiceLine>> SearchLines(string InputText, List<string> ImportantWords, float ImportantWordsMultiplier, Action<float> ProgressCallback)
     {
         return await Task.Run(() =>
         {
@@ -76,7 +76,7 @@ public class VoiceLineService : Singleton<VoiceLineService>
             }
             
             float ImportantWordsRatio = (float) ImportantWords.Count / Words.Length;
-            float ImportantScoreAdding = 100 * ImportantWordsRatio;
+            float ImportantScoreAdding = 100 * ImportantWordsRatio * ImportantWordsMultiplier;
 
             Parallel.ForEach(VoiceLines, ParallelOptions, Line =>
             {
