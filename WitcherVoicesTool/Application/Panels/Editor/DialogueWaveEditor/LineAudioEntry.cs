@@ -27,9 +27,6 @@ public class LineAudioEntry
     public float StartTime;
     public float EndTime;
 
-    public float FadeInDuration = 0f;
-    public float FadeOutDuration = 0f;
-
     public float TotalDuration;
 
     public string Name = "";

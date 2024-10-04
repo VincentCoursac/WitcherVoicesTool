@@ -25,10 +25,8 @@ public class DialogueWaveEditorPanel : ContentPanel
     
     public DialogueWaveEditorPanel(Scene InScene, LineBase InTargetLine)
     {
-        //ParentScene = InScene;
         ParentSavable = InScene;
         TargetLine = InTargetLine;
-       // PanelName = $"{ParentScene.Header.Name} - {TargetLine.Character}";
     }
     
     public DialogueWaveEditorPanel(LineBase InTargetLine)
@@ -353,14 +351,10 @@ public class DialogueWaveEditorPanel : ContentPanel
         {
             LineAudioEntry Entry = TargetLine.AudioEntries[EntryIndex];
             
-            /*ImVec4* colors = ImGui::GetStyle().Colors;
-            colors[ImGuiCol_Border]                 = ImVec4(0.27f, 0.59f, 0.39f, 0.50f);
-            colors[ImGuiCol_MenuBarBg]              = ImVec4(0.56f, 0.20f, 0.20f, 1.00f);*/
-
             ImGui.PushStyleColor(ImGuiCol.MenuBarBg, Entry.Color);
             ImGui.PushStyleColor(ImGuiCol.Border, Entry.Color);
             
-            if (ImGui.BeginChild($"{Entry.Id}",  new Vector2(ImGui.GetContentRegionAvail().X, 170), ImGuiChildFlags.Border, WindowsFlags))
+            if (ImGui.BeginChild($"{Entry.Id}",  new Vector2(ImGui.GetContentRegionAvail().X, 150), ImGuiChildFlags.Border, WindowsFlags))
             {
                 ImGuiStylePtr style = ImGui.GetStyle();
                 float PreviousAlpha = style.DisabledAlpha;
@@ -399,20 +393,7 @@ public class DialogueWaveEditorPanel : ContentPanel
                 Entry.StartTime = MathUtils.Clamp(Entry.StartTime, 0, Entry.EndTime - 0.01f);
                 Entry.EndTime = MathUtils.Clamp(Entry.EndTime, Entry.StartTime + 0.01f, Entry.TotalDuration);
                 
-                if (ImGui.SmallButton("R##3"))
-                {
-                    Entry.FadeInDuration = 0;
-                }
-                ImGui.SameLine();
-                ImGui.InputFloat("Fade In", ref Entry.FadeInDuration, 0.01f, 1.0f, "%.3f");
-                
-                if (ImGui.SmallButton("R##4"))
-                {
-                    Entry.FadeOutDuration = 0;
-                }
-                ImGui.SameLine();
-                ImGui.InputFloat("Fade Out", ref Entry.FadeOutDuration, 0.01f, 1.0f, "%.3f");
-                
+                ImGui.Dummy(new Vector2(0,20));
                 if (ImGui.Button("Play"))
                 {
                     Entry.Play();
@@ -468,21 +449,6 @@ public class DialogueWaveEditorPanel : ContentPanel
             draw_list.AddRectFilled(canvas_p0 + new Vector2(TotalGraphWidth * StartTimePercent,0), 
                 canvas_p1 - new Vector2(TotalGraphWidth * EndTimePercent,0), ImGui.ColorConvertFloat4ToU32(new Vector4(0.2f, 0.8f, 1f,0.4f)));
 
-            if (Entry.FadeInDuration > 0)
-            {
-                Vector2 FadeInP1 = canvas_p0 + new Vector2(TotalGraphWidth * StartTimePercent, 0);
-                Vector2 FadeInP2 = FadeInP1 + new Vector2(TotalGraphWidth * (Entry.FadeInDuration / Entry.TotalDuration), 90);
-                    
-                draw_list.AddRectFilled(FadeInP1, FadeInP2, ImGui.ColorConvertFloat4ToU32(new Vector4(0.2f, 1, 0.2f, 0.8f)));
-            }
-                
-            if (Entry.FadeOutDuration > 0)
-            {
-                Vector2 FadeOutP1 = canvas_p1 - new Vector2(TotalGraphWidth * EndTimePercent, 0);
-                Vector2 FadeOutP2 = FadeOutP1 - new Vector2(TotalGraphWidth * (Entry.FadeOutDuration / Entry.TotalDuration), 90);
-                    
-                draw_list.AddRectFilled(FadeOutP1, FadeOutP2, ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0.2f, 0.2f, 0.8f)));
-            }
             
             ImGui.PlotHistogram("", ref Entry.Samples.ToArray()[0], 
                 Entry.Samples.Count, 0, null, -1, 1, new Vector2(ImGui.GetContentRegionAvail().X, 90));
