@@ -38,6 +38,29 @@ public class ProjectService : Singleton<ProjectService>
 
         return false;
     }
+
+    public void LoadProject(string ProjectPath)
+    {
+        List<string> RecentProjectsPaths = ApplicationSettings.Get().ProjectsSettings.RecentProjects;
+        if (RecentProjectsPaths.Contains(ProjectPath))
+        {
+            return;
+        }
+        
+        string ProjectJson = File.ReadAllText(ProjectPath);
+        Project Project = JsonConvert.DeserializeObject<Project>(ProjectJson);
+            
+        if (Macros.ENSURE(Project != null))
+        {
+            Project.OnPostLoad();
+            CurrentProject = Project;
+            RecentProjectsPaths.Add(ProjectPath);
+            RecentProjects.Add(CurrentProject);
+            
+            ApplicationSettings.Save();
+            ContentPanelManager.GetInstance().AddContentPanel(new ProjectPanel(CurrentProject));
+        }
+    }
     
     public void LoadRecentProjects()
     {
@@ -45,11 +68,13 @@ public class ProjectService : Singleton<ProjectService>
 
         List<string> RecentProjectsPaths = ApplicationSettings.Get().ProjectsSettings.RecentProjects;
 
-        foreach (string ProjectPath in RecentProjectsPaths)
+        foreach (string ProjectPath in RecentProjectsPaths.ToList())
         {
             if (!File.Exists(ProjectPath))
             {
                 Logger.Error($"Invalid recent project path '{ProjectPath}'");
+                RecentProjectsPaths.Remove(ProjectPath);
+                ApplicationSettings.Save();
                 continue;
             }
             

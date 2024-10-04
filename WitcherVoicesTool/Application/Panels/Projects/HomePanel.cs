@@ -2,7 +2,6 @@
 using ImGuiNET;
 using WitcherVoicesTool.Application.Services;
 using WitcherVoicesTool.Application.Settings;
-using WitcherVoicesTool.Models;
 
 namespace WitcherVoicesTool.Application.Panels;
 
@@ -28,6 +27,13 @@ public class HomePanel : SingletonPanel<HomePanel>
         {
             NewProject = new Project();
             CreateProjectPopup.RequestPopup();
+        }
+        
+        ImGui.SameLine();
+        
+        if (Widgets.ColoredButton("Open Project", Theming.Blue))
+        {
+            TryOpenProject();
         }
         
         ImGui.SameLine();
@@ -60,74 +66,90 @@ public class HomePanel : SingletonPanel<HomePanel>
     protected override void DrawUnframed(float DeltaTime)
     {
         CreateProjectPopup.TryOpenIfNeeded();
-
-        if (Widgets.ModalPopup("Create Project"))
+        
+        if (Widgets.ModalPopup(CreateProjectPopup.GetPopupName()))
         {
-            NewProject ??= new Project();
-            
-            ImGui.Text("Create your Project");
-            ImGui.Separator();
-            ImGui.Dummy(new Vector2(350,10));
-            
-            ImGui.AlignTextToFramePadding();
-            ImGui.Text("Project Name   ");
-            ImGui.SameLine();
-            ImGui.PushItemWidth(-1);
-            ImGui.InputTextWithHint("##ProjectName", "My Witcher 3 Mod", ref NewProject.Name, 64);
-            ImGui.PopItemWidth();
-            
-            ImGui.Dummy(new Vector2(0, 5));
-            ImGui.AlignTextToFramePadding();
-            ImGui.Text("Project Location");
-            ImGui.SameLine();
+            ManageCreateProjectPopup();
+            ImGui.EndPopup();
+        }
+    }
 
-            if (ImGui.Button("Choose..."))
+    void ManageCreateProjectPopup()
+    {
+        NewProject ??= new Project();
+            
+        ImGui.Text("Create your Project");
+        ImGui.Separator();
+        ImGui.Dummy(new Vector2(350,10));
+        
+        ImGui.AlignTextToFramePadding();
+        ImGui.Text("Project Name   ");
+        ImGui.SameLine();
+        ImGui.PushItemWidth(-1);
+        ImGui.InputTextWithHint("##ProjectName", "My Witcher 3 Mod", ref NewProject.Name, 64);
+        ImGui.PopItemWidth();
+        
+        ImGui.Dummy(new Vector2(0, 5));
+        ImGui.AlignTextToFramePadding();
+        ImGui.Text("Project Location");
+        ImGui.SameLine();
+
+        if (ImGui.Button("Choose..."))
+        {
+            using FolderBrowserDialog FolderDialog = new FolderBrowserDialog();
+   
+            if (FolderDialog.ShowDialog() == DialogResult.OK)
             {
-                using FolderBrowserDialog FolderDialog = new FolderBrowserDialog();
-       
-                if (FolderDialog.ShowDialog() == DialogResult.OK)
-                {
-                    NewProject.FolderPath = FolderDialog.SelectedPath;
-                }
+                NewProject.FolderPath = FolderDialog.SelectedPath;
             }
+        }
 
-            bool bIsDirectoryValid = false;
+        bool bIsDirectoryValid = false;
+        
+        if (Directory.Exists(NewProject.FolderPath))
+        {
+            bool bIsFolderEmpty = !Directory.EnumerateFileSystemEntries(NewProject.FolderPath).Any();
             
-            if (Directory.Exists(NewProject.FolderPath))
+            if (bIsFolderEmpty)
             {
-                bool bIsFolderEmpty = !Directory.EnumerateFileSystemEntries(NewProject.FolderPath).Any();
-                
-                if (bIsFolderEmpty)
-                {
-                    ImGui.TextColored(new Vector4(0.2f,1,0.2f,1), NewProject.FolderPath);
-                    bIsDirectoryValid = true;
-                }
-                else
-                {
-                    ImGui.TextColored(new Vector4(1,0.2f,0.2f,1), $"{NewProject.FolderPath} is not empty");
-                }
+                ImGui.TextColored(new Vector4(0.2f,1,0.2f,1), NewProject.FolderPath);
+                bIsDirectoryValid = true;
             }
             else
             {
-                ImGui.TextColored(new Vector4(1,0.2f,0.2f,1), "No path selected");
+                ImGui.TextColored(new Vector4(1,0.2f,0.2f,1), $"{NewProject.FolderPath} is not empty");
             }
-            
-            ImGui.Dummy(new Vector2(0, 15));
-            
-            if (Widgets.ColoredButton("Create", Theming.Yellow, !bIsDirectoryValid || NewProject.Name.Length == 0))
-            {
-                if (ProjectService.GetInstance().CreateProject(NewProject))
-                {
-                    ImGui.CloseCurrentPopup();
-                }
-            }
-            ImGui.SameLine(0 ,5);
-            if (ImGui.Button("Cancel"))
+        }
+        else
+        {
+            ImGui.TextColored(new Vector4(1,0.2f,0.2f,1), "No path selected");
+        }
+        
+        ImGui.Dummy(new Vector2(0, 15));
+        
+        if (Widgets.ColoredButton("Create", Theming.Yellow, !bIsDirectoryValid || NewProject.Name.Length == 0))
+        {
+            if (ProjectService.GetInstance().CreateProject(NewProject))
             {
                 ImGui.CloseCurrentPopup();
             }
-            
-            ImGui.EndPopup();
+        }
+        ImGui.SameLine(0 ,5);
+        if (ImGui.Button("Cancel"))
+        {
+            ImGui.CloseCurrentPopup();
+        }
+    }
+
+    void TryOpenProject()
+    {
+        using OpenFileDialog FileDialog = new OpenFileDialog();
+        FileDialog.Filter = "Voice Tool Project (*.vtproject)|*.vtproject";
+        FileDialog.RestoreDirectory = true;
+
+        if (FileDialog.ShowDialog() == DialogResult.OK)
+        {
+            ProjectService.GetInstance().LoadProject(FileDialog.FileName);
         }
     }
 }

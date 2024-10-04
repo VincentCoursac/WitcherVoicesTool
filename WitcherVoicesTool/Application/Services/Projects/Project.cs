@@ -171,4 +171,15 @@ public class Project
 
         return null;
     }
+
+    public bool IsSameProject(Project? OtherProject)
+    {
+        if (OtherProject == null)
+        {
+            return false;
+        }
+        
+        return OtherProject.Id == Id || (OtherProject.ProjectFileName.Equals(ProjectFileName) &&
+                                         OtherProject.FolderPath.Equals(FolderPath));
+    }
 }

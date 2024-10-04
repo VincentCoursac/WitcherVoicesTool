@@ -52,6 +52,14 @@ public class Theming
         Content = new Vector4(0,0,0,1)
     };    
     
+    
+    public static readonly ThemeColor Blue = new ThemeColor
+    {
+        Main = new Vector4(0.29f,0.494f,0.878f,1),
+        Hovered = new Vector4(0.498f, 0.675f, 1, 1),
+        Content = new Vector4(0,0,0,1)
+    }; 
+    
     public static readonly ThemeColor Yellow = new ThemeColor
     {
         Main = new Vector4(0.988f, 0.871f, 0.212f, 1),
