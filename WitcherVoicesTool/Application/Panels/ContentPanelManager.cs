@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using ImGuiNET;
+using WitcherVoicesTool.Application.Panels.Tools;
 using WitcherVoicesTool.Utils;
 
 namespace WitcherVoicesTool.Application.Panels;
@@ -91,11 +92,22 @@ public sealed class ContentPanelManager : Singleton<ContentPanelManager>
         
         if (ImGui.BeginMenuBar())
         {
+            if (ImGui.BeginMenu("Tools"))
+            {
+                if (ImGui.MenuItem("16k Converter"))
+                {
+                    AddContentPanel(new LipsyncConverterPanel());
+                }
+                
+                ImGui.EndMenu();
+            }
+#if DEBUG
             if (ImGui.BeginMenu("Debug"))
             {
                 ImGui.MenuItem("Show Demo Window", "", ref bShowDemoWindow);
                 ImGui.EndMenu();
             }
+#endif
             ImGui.EndMenuBar();
         }
     }

@@ -24,6 +24,17 @@ public class FlowTaskSequencer
         return this;
     }
 
+    public bool Reset()
+    {
+        if (bInProgress)
+        {
+            return false;
+        }
+
+        Tasks.Clear();
+        return true;
+    }
+
     public async void Start()
     {
         bInProgress = true;
@@ -84,6 +95,12 @@ public class FlowTaskSequencer
             TotalProgress += Task.GetEstimatedProgress();
             TotalCost += Task.GetEstimatedCost();
         }
+
+        if (TotalCost == 0)
+        {
+            return 0;
+        }
+        
         return TotalProgress / TotalCost;
     }
 
