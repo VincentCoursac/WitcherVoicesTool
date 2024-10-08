@@ -101,6 +101,21 @@ public sealed class ContentPanelManager : Singleton<ContentPanelManager>
                 
                 ImGui.EndMenu();
             }
+            
+            if (ImGui.BeginMenu("About"))
+            {
+                if (ImGui.MenuItem("Documentation"))
+                {
+                   FileUtils.OpenURL("https://github.com/VincentCoursac/WitcherVoicesTool");
+                }
+                
+                if (ImGui.MenuItem("Discord"))
+                {
+                    FileUtils.OpenURL("https://discord.gg/tPyVcG3c63");
+                }
+                
+                ImGui.EndMenu();
+            }
 #if DEBUG
             if (ImGui.BeginMenu("Debug"))
             {

@@ -16,6 +16,11 @@ static class VoicesToolProgram
         ApplicationSettings.Load();
 
         ContentPanelManager.GetInstance()?.AddContentPanel(new LoadApplicationPanel());
-        new ApplicationWindow(1280, 720, "WitcherVoicesTool by Roi_Jean").Start();
+        new ApplicationWindow(1280, 720, "WitcherVoicesTool by Roi_Jean - v" + GetVersion()).Start();
+    }
+
+    static string GetVersion()
+    {
+        return "0.1";
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace WitcherVoicesTool.Utils;
 
@@ -11,5 +12,14 @@ public static class FileUtils
        Transformed = Regex.Replace(Transformed, "");
        Transformed = Regex.Replace(Transformed, "_+", "_");
        return Transformed;
+    }
+
+    public static void OpenURL(string URL)
+    {
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = URL,
+            UseShellExecute = true 
+        });
     }
 }
