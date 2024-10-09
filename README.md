@@ -22,4 +22,9 @@ Download to tool from the github releases or from Nexus Mod (LINK soon). Then ju
 You can check this video walkthrough of the tool (LINK soon), and/or follow the following tutorials : 
 
 * [Install voice library](https://github.com/VincentCoursac/WitcherVoicesTool/wiki/Install-voice-library)
+
+
+## Links
+
+Join my discord for help : https://discord.gg/3bHrj3ZM
   
