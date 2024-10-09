@@ -19,7 +19,7 @@ This tool is dedicated to modding The Witcher 3 Wild Hunt. Its aim is to help de
 
 Download to tool from the github releases or from Nexus Mod (LINK soon). Then just open the app! 
 
-You can check this video walkthrough of the tool (LINK soon), and/or follow the following tutorials : 
+You can check this [video walkthrough of the tool](https://www.youtube.com/watch?v=ZjpRucwSKjM), and/or follow the following tutorials : 
 
 * [Install voice library](https://github.com/VincentCoursac/WitcherVoicesTool/wiki/Install-voice-library)
 
