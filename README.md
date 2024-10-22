@@ -26,5 +26,5 @@ You can check this [video walkthrough of the tool](https://www.youtube.com/watch
 
 ## Links
 
-Join my discord for help : https://discord.gg/3bHrj3ZM
+Join my discord for help : [https://discord.gg/3bHrj3ZM](https://discord.gg/tPyVcG3c63)
   
